@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ฟอร์มเก็บข้อมูลนักเรียน</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body class="bg-light">
+
+<div class="container mt-5">
+    <div class="card shadow mx-auto" style="max-width: 600px;">
+        <div class="card-header bg-primary text-white text-center">
+            <h4 class="mb-0">ฟอร์มเก็บข้อมูลนักเรียน</h4>
+        </div>
+        <div class="card-body">
+            <form id="studentForm">
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label for="prefix" class="form-label">คำนำหน้าชื่อ</label>
+                        <select class="form-select" id="prefix" required>
+                            <option value="" selected disabled>เลือก...</option>
+                            <option value="เด็กชาย">เด็กชาย</option>
+                            <option value="เด็กหญิง">เด็กหญิง</option>
+                            <option value="นาย">นาย</option>
+                            <option value="นางสาว">นางสาว</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="firstName" class="form-label">ชื่อ</label>
+                        <input type="text" class="form-control" id="firstName" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="lastName" class="form-label">นามสกุล</label>
+                        <input type="text" class="form-control" id="lastName" required>
+                    </div>
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <label for="grade" class="form-label">ชั้นมัธยมศึกษาปีที่</label>
+                        <select class="form-select" id="grade" required>
+                            <option value="" selected disabled>เลือก...</option>
+                            <option value="1">ม.1</option>
+                            <option value="2">ม.2</option>
+                            <option value="3">ม.3</option>
+                            <option value="4">ม.4</option>
+                            <option value="5">ม.5</option>
+                            <option value="6">ม.6</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="room" class="form-label">ห้อง</label>
+                        <input type="number" class="form-control" id="room" min="1" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="number" class="form-label">เลขที่</label>
+                        <input type="number" class="form-control" id="number" min="1" required>
+                    </div>
+                </div>
+
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary btn-lg">บันทึกข้อมูล</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('studentForm').addEventListener('submit', function(e) {
+    e.preventDefault(); // ป้องกันการรีเฟรชหน้าจอตามปกติของฟอร์ม
+
+    // แสดง SweetAlert2 สถานะกำลังบันทึกข้อมูล (Loading)
+    Swal.fire({
+        title: 'กำลังบันทึกข้อมูล...',
+        text: 'กรุณารอสักครู่',
+        allowOutsideClick: false,
+        didOpen: () => {
+            Swal.showLoading();
+        }
+    });
+
+    // ดึงค่าจากฟอร์ม
+    const prefix = document.getElementById('prefix').value;
+    const firstName = document.getElementById('firstName').value;
+    const lastName = document.getElementById('lastName').value;
+    const grade = document.getElementById('grade').value;
+    const room = document.getElementById('room').value;
+    const number = document.getElementById('number').value;
+
+    // URL ของ Google Apps Script ที่ระบุมา
+    const webAppUrl = "https://script.google.com/macros/s/AKfycbzwmcH1JXMTWkN4iS2UTC86kkFJT8jVmktyK5EssQRm4P9fQVqfAabYF4gciPJKaCPS/exec";
+
+    // สร้างชื่อฟังก์ชัน callback แบบสุ่มเพื่อส่งไปกับ JSONP
+    const callbackName = 'jsonp_callback_' + Math.round(100000 * Math.random());
+
+    // สร้าง Query String สำหรับส่งข้อมูลแบบ GET (JSONP จำเป็นต้องใช้ GET)
+    const params = new URLSearchParams({
+        prefix: prefix,
+        firstName: firstName,
+        lastName: lastName,
+        grade: grade,
+        room: room,
+        number: number,
+        callback: callbackName // ส่งชื่อฟังก์ชัน callback ไปให้ฝั่งเซิร์ฟเวอร์เรียกกลับ
+    });
+
+    // นิยามฟังก์ชัน Callback รอไว้ เมื่อเซิร์ฟเวอร์ตอบกลับมา ฟังก์ชันนี้จะทำงาน
+    window[callbackName] = function(response) {
+        if (response.result === 'success') {
+            // แสดงสถานะบันทึกสำเร็จ
+            Swal.fire({
+                icon: 'success',
+                title: 'บันทึกสำเร็จ!',
+                text: 'ข้อมูลของท่านถูกบันทึกลงฐานข้อมูลเรียบร้อยแล้ว',
+                confirmButtonText: 'ตกลง'
+            });
+            document.getElementById('studentForm').reset(); // เคลียร์ข้อมูลในฟอร์ม
+        } else {
+            // แสดงข้อผิดพลาดหากมีปัญหาที่ฝั่งสคริปต์
+            Swal.fire({
+                icon: 'error',
+                title: 'เกิดข้อผิดพลาด',
+                text: response.message || 'ไม่สามารถบันทึกข้อมูลได้',
+            });
+        }
+
+        // ลบ Element <script> และฟังก์ชันชั่วคราวออกเพื่อประหยัดหน่วยความจำ
+        document.body.removeChild(script);
+        delete window[callbackName];
+    };
+
+    // สร้างแท็ก <script> เพื่อยิงคำขอไปยัง Google Apps Script (เทคนิค JSONP หลีกเลี่ยง CORS)
+    const script = document.createElement('script');
+    script.src = `${webAppUrl}?${params.toString()}`;
+    
+    // ดักจับกรณีที่เซิร์ฟเวอร์ไม่ตอบสนองหรือ URL ผิดพลาด
+    script.onerror = function() {
+        Swal.fire({
+            icon: 'error',
+            title: 'เชื่อมต่อล้มเหลว',
+            text: 'ไม่สามารถติดต่อเซิร์ฟเวอร์ได้ กรุณาลองใหม่อีกครั้ง',
+        });
+        delete window[callbackName];
+        document.body.removeChild(script);
+    };
+
+    // แทรกแท็กสคริปต์เข้าหน้าเว็บเพื่อเริ่มส่งข้อมูล
+    document.body.appendChild(script);
+});
+</script>
+
+</body>
+</html>
